@@ -1,0 +1,320 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>Java 自定义注解的学习笔记 | aBlog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="这篇博文主要是我在学习 Java Annotation 时的笔记和感悟。学习 Java web 开发会发现，现在越来越多的 Web 开发框架慢慢舍弃不必要的传统的 XML、properties 等配置文件，使用 Annotation 的方式来配置框架程序运行时所需的信息和配置。这种比较轻便的注解配置的方式也使得程序开发更加快捷，更利于程序维护，至少当程序中 Java 代码更改之后，不需要在另外一个">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Java 自定义注解的学习笔记">
+<meta property="og:url" content="http://winminy.github.io/2014/05/Learning Java Annotation/">
+<meta property="og:site_name" content="aBlog">
+<meta property="og:description" content="这篇博文主要是我在学习 Java Annotation 时的笔记和感悟。学习 Java web 开发会发现，现在越来越多的 Web 开发框架慢慢舍弃不必要的传统的 XML、properties 等配置文件，使用 Annotation 的方式来配置框架程序运行时所需的信息和配置。这种比较轻便的注解配置的方式也使得程序开发更加快捷，更利于程序维护，至少当程序中 Java 代码更改之后，不需要在另外一个">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Java 自定义注解的学习笔记">
+<meta name="twitter:description" content="这篇博文主要是我在学习 Java Annotation 时的笔记和感悟。学习 Java web 开发会发现，现在越来越多的 Web 开发框架慢慢舍弃不必要的传统的 XML、properties 等配置文件，使用 Annotation 的方式来配置框架程序运行时所需的信息和配置。这种比较轻便的注解配置的方式也使得程序开发更加快捷，更利于程序维护，至少当程序中 Java 代码更改之后，不需要在另外一个">
+
+  
+    <link rel="alternative" href="/atom.xml" title="aBlog" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link rel="stylesheet" href="/css/style.css" type="text/css">
+
+  <!--[if lt IE 9]><script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7/html5shiv.min.js"></script><![endif]-->
+  
+</head>
+<body>
+<div id="container">
+  <div id="wrap">
+    <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">aBlog</a>
+      </h1>
+      
+        <h2 id="subtitle-wrap">
+          <a href="/" id="subtitle">Technology changes world!</a>
+        </h2>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="http://www.baidu.com/baidu" method="get" accept-charset="utf-8" class="search-form">
+          <input type="search" name="word" maxlength="20" class="search-form-input" placeholder="Search">
+          <input type="submit" value="" class="search-form-submit">
+          <input name=tn type=hidden value="bds">
+          <input name=cl type=hidden value="3">
+          <input name=ct type=hidden value="2097152">
+          <input type="hidden" name="si" value="winminy.github.io">
+        </form>
+      </div>
+    </div>
+  </div>
+</header>
+    <div class="outer">
+      <section id="main"><article id="post-Learning Java Annotation" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2014/05/Learning Java Annotation/" class="article-date">
+  <time datetime="2014-05-20T11:31:50.000Z" itemprop="datePublished">2014 5月 20</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Java/">Java</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Java 自定义注解的学习笔记
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>这篇博文主要是我在学习 Java Annotation 时的笔记和感悟。学习 Java web 开发会发现，现在越来越多的 Web 开发框架慢慢舍弃不必要的传统的 XML、properties 等配置文件，使用 Annotation 的方式来配置框架程序运行时所需的信息和配置。这种比较轻便的注解配置的方式也使得程序开发更加快捷，更利于程序维护，至少当程序中 Java 代码更改之后，不需要在另外一个地方的 XML 修改配置。</p>
+<p><a id="more"></a></p>
+<h3 id="Java_语言中的_Annotation_为何物？">Java 语言中的 Annotation 为何物？</h3>
+<p>Java 在 1.5 版本开始以特殊的元数据（关于数据信息的数据）的形式引入注解（Annotation）。那么究竟什么是  Java 中的 Annotation 呢？ 看下它的定义：</p>
+<blockquote>
+<p>Annotation 是 Java 语言中的一种特殊的元数据语法，可以被添加到 Java 代码中。类，方法，变量，参数，包都可以被标注。与 Javadoc 的标签不同，注解是可以被反射的，因为他们被编译器生成嵌入在编译后文件，并保留在虚拟机中以便在运行时被索引。</p>
+<p>Annotation 是与一个程序元素关联信息或者元数据的标注。它不影响 Java 程序的执行，但是对例如编译器警告或者像文档生成器等辅助工具产生影响。</p>
+</blockquote>
+<p>从定义中可以了解到，Java Annotation 是一种用来标注数据或者程序语言元素信息的“工具”，它不会改变程序的执行过程，但是可以利用相关的工具根据 Annotation 的具体定义和内容对它标注的数据进行一些操作。</p>
+<h3 id="Java_中内建的注解（Built-in_Annotation）和自定义注解">Java 中内建的注解（Built-in Annotation）和自定义注解</h3>
+<p>在使用 Java 的过程中，我们会碰到的内建注解不多，比较常见的是 <code>@Override</code> <code>@Deprecated</code> <code>@SuppressWarnings</code> 这三个，具体作用不再详细叙述。</p>
+<p>主要说一下 Java 自定义的注解。</p>
+<h4 id="怎么定义一个注解">怎么定义一个注解</h4>
+<p>下面是一个自定义注解的例子：</p>
+<figure class="highlight Java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line"></div><div class="line"><span class="keyword">import</span> java.lang.annotation.Documented;</div><div class="line"><span class="keyword">import</span> java.lang.annotation.ElementType;</div><div class="line"><span class="keyword">import</span> java.lang.annotation.Inherited;</div><div class="line"><span class="keyword">import</span> java.lang.annotation.Retention;</div><div class="line"><span class="keyword">import</span> java.lang.annotation.RetentionPolicy;</div><div class="line"><span class="keyword">import</span> java.lang.annotation.Target;</div><div class="line"></div><div class="line"><span class="annotation">@Documented</span></div><div class="line"><span class="annotation">@Target</span>(ElementType.FIELD)</div><div class="line"><span class="annotation">@Retention</span>(RetentionPolicy.RUNTIME)</div><div class="line"><span class="annotation">@Inherited</span></div><div class="line"><span class="keyword">public</span> @<span class="class"><span class="keyword">interface</span> <span class="title">ValueBind</span> </span>{</div><div class="line">    String value() <span class="keyword">default</span> <span class="string">""</span>;</div><div class="line">}</div></pre></td></tr></table></figure>
+
+<p>从这个例子中可以看到：</p>
+<ol>
+<li><p>自定义注解的类型为 <code>@interface</code> </p>
+</li>
+<li><p>自定义注解可以被<strong>元注解</strong>标记，比如 <code>@Document</code>  </p>
+</li>
+<li><p>自定义注解可以有“方法属性”，并且可以提供一个默认值作为返回值</p>
+</li>
+</ol>
+<h4 id="元注解">元注解</h4>
+<p>上面例子展示了定义自己的注解的时候可以使用的元注解，包括 <code>@Documented</code> , <code>@Target</code> , <code>@Retention</code> 和 <code>@Inherited</code> 这四个。下面是这四个元注解的源代码和他们的作用。</p>
+<ul>
+<li>@Document</li>
+</ul>
+<p>源代码和用法如下:</p>
+<figure class="highlight Java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">package</span> java.lang.annotation;</div><div class="line"></div><div class="line"><span class="javadoc">/**</span></div><div class="line"> * Indicates that annotations with a type are to be documented by javadoc</div><div class="line"> * and similar tools by default.  This type should be used to annotate the </div><div class="line"> * declarations of types whose annotations affect the use of annotated</div><div class="line"> * elements by their clients.  If a type declaration is annotated with</div><div class="line"> * Documented, its annotations become part of the public API</div><div class="line"> * of the annotated elements.</div><div class="line"> *中文：</div><div class="line"> *这个被这个注解标明的 Type 默认将会被 javadoc 和相似的工具记录。</div><div class="line"> *这个注解应该用在声明那些可能影响它标注对象的使用的注解身上。</div><div class="line"> *如果一个 type</div><div class="line"> *声明的时候被用这个注解标注了，那么他的注解也会成为公共 API 的一部分。</div><div class="line"> *</div><div class="line"> *<span class="javadoctag"> @author</span>  Joshua Bloch</div><div class="line"> *<span class="javadoctag"> @version</span> 1.6, 11/17/05</div><div class="line"> *<span class="javadoctag"> @since</span> 1.5</div><div class="line"> */</div><div class="line"><span class="annotation">@Documented</span></div><div class="line"><span class="annotation">@Retention</span>(RetentionPolicy.RUNTIME)</div><div class="line"><span class="annotation">@Target</span>(ElementType.ANNOTATION_TYPE)</div><div class="line"><span class="keyword">public</span> @<span class="class"><span class="keyword">interface</span> <span class="title">Documented</span> </span>{</div><div class="line">}</div></pre></td></tr></table></figure>
+
+<ul>
+<li>@Target</li>
+</ul>
+<p>他的源码和用法：</p>
+<figure class="highlight Java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line"><span class="javadoc">/**</span></div><div class="line">*指示注释类型所适用的程序元素的种类。如果注释类型声明中不存在 Target *元注释，则声明的类型可以用在任一程序元素上。如果存在这样的元注释，则编译*器强制实施指定的使用限制。 </div><div class="line">*/</div><div class="line"><span class="annotation">@Documented</span></div><div class="line"><span class="annotation">@Retention</span>(RetentionPolicy.RUNTIME)</div><div class="line"><span class="annotation">@Target</span>(ElementType.ANNOTATION_TYPE)</div><div class="line"><span class="keyword">public</span> @<span class="class"><span class="keyword">interface</span> <span class="title">Target</span> </span>{</div><div class="line">    ElementType[] value();</div><div class="line">}</div></pre></td></tr></table></figure>
+
+<p>其中可以使用的 Vlaue 为：</p>
+<figure class="highlight Java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">public</span> <span class="keyword">enum</span> ElementType {</div><div class="line">   <span class="javadoc">/** Class, interface (including annotation type), or enum declaration */</span></div><div class="line">    TYPE,</div><div class="line">    <span class="javadoc">/** Field declaration (includes enum constants) */</span></div><div class="line">    FIELD,</div><div class="line">    <span class="javadoc">/** Method declaration */</span></div><div class="line">    METHOD,</div><div class="line">    <span class="javadoc">/** Parameter declaration */</span></div><div class="line">    PARAMETER,</div><div class="line">    <span class="javadoc">/** Constructor declaration */</span></div><div class="line">    CONSTRUCTOR,</div><div class="line">    <span class="javadoc">/** Local variable declaration */</span></div><div class="line">    LOCAL_VARIABLE,</div><div class="line">    <span class="javadoc">/** Annotation type declaration */</span></div><div class="line">    ANNOTATION_TYPE,</div><div class="line">    <span class="javadoc">/** Package declaration */</span></div><div class="line">    PACKAGE</div><div class="line">}</div></pre></td></tr></table></figure>
+
+<ul>
+<li>@Retention<br>源码和用法：</li>
+</ul>
+<figure class="highlight Java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line"><span class="javadoc">/**</span></div><div class="line">*指示注释类型的注解要保留多久。如果注解的声明中不存在 Retention </div><div class="line">*注释，则保留策略默认为 RetentionPolicy.CLASS。 </div><div class="line">*只有元注释类型直接用于注释时，Target</div><div class="line">*元注释才有效。如果元注释类型用作另一种注释类型的成员，则无效。</div><div class="line">*/</div><div class="line"><span class="annotation">@Documented</span></div><div class="line"><span class="annotation">@Retention</span>(RetentionPolicy.RUNTIME)</div><div class="line"><span class="annotation">@Target</span>(ElementType.ANNOTATION_TYPE)</div><div class="line"><span class="keyword">public</span> @<span class="class"><span class="keyword">interface</span> <span class="title">Retention</span> </span>{</div><div class="line">    RetentionPolicy value();</div><div class="line">}</div></pre></td></tr></table></figure>
+
+<p>可以使用的 Value 和对应的意义</p>
+<figure class="highlight Java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">public</span> <span class="keyword">enum</span> RetentionPolicy {</div><div class="line">    <span class="javadoc">/**</span></div><div class="line">     * Annotations are to be discarded by the compiler.</div><div class="line">     * 编译器忽略的注解</div><div class="line">     */</div><div class="line">    SOURCE,</div><div class="line">    <span class="javadoc">/**</span></div><div class="line">     * Annotations are to be recorded in the class file by the compiler</div><div class="line">     * but need not be retained by the VM at run time.  </div><div class="line">     * This is the default</div><div class="line">     * behavior.</div><div class="line">     * 编译器可以识别，但是运行时 Jvm 忽略的注解</div><div class="line">     */</div><div class="line">    CLASS,</div><div class="line">    <span class="javadoc">/**</span></div><div class="line">     * Annotations are to be recorded in the class file by the compiler </div><div class="line">     * and</div><div class="line">     * retained by the VM at run time, so they may be read reflectively.</div><div class="line">     *</div><div class="line">     *<span class="javadoctag"> @see</span> java.lang.reflect.AnnotatedElement</div><div class="line">     * 编译器、JVM 都可以使用的注解类型，可以通过反射找到并使用</div><div class="line">     */</div><div class="line">    RUNTIME</div><div class="line">}</div></pre></td></tr></table></figure>
+
+<ul>
+<li>@Inherited<br>源码和使用方法：</li>
+</ul>
+<figure class="highlight Java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line"><span class="javadoc">/**</span></div><div class="line">*指示注释类型被自动继承。</div><div class="line">*如果在注释类型声明中存在 Inherited 元注释，</div><div class="line">*并且用户在某一类声明中查询该注释类型，</div><div class="line">*同时该类声明中没有此类型的注释，则将在该类的超类中自动查询该注释类型。</div><div class="line">*此过程会重复进行，直到找到此类型的注释或到达了该类层次结构的顶层 (Object) 为止。</div><div class="line">*如果没有超类具有该类型的注释，则查询将指示当前类没有这样的注释。 </div><div class="line"></div><div class="line">*注意，如果使用注释类型注释 Class 以外的任何事物，</div><div class="line">*此元注释类型都是无效的。</div><div class="line">*还要注意，此元注释仅促成从超类继承注释，对实现接口的方式该注释无效。</div><div class="line">*/</div><div class="line"><span class="annotation">@Documented</span></div><div class="line"><span class="annotation">@Retention</span>(RetentionPolicy.RUNTIME)</div><div class="line"><span class="annotation">@Target</span>(ElementType.ANNOTATION_TYPE)</div><div class="line"><span class="keyword">public</span> @<span class="class"><span class="keyword">interface</span> <span class="title">Inherited</span> </span>{</div><div class="line">}</div></pre></td></tr></table></figure>
+
+<h4 id="自定义注解的使用">自定义注解的使用</h4>
+<p>注解如果没有被解析和使用，和标记在对应位置的注释是一样的。<br>那么如何解析注解呢？</p>
+<ul>
+<li><p>利用 Java 提供的 APT（Annotation processing tools）<br>这一块比较不常用吧，而且需要篇幅说明，如果有兴趣，请阅读：</p>
+<p>  <a href="http://www.oracle.com/technetwork/cn/testcontent/hunter-meta-3-098763-zhs.html" target="_blank" rel="external">充分利用 Java 的元数据，第 3 部分：高级处理</a></p>
+<p>  <a href="http://docs.oracle.com/javase/1.5.0/docs/guide/apt/GettingStarted.html" target="_blank" rel="external">APT 官方手册</a></p>
+</li>
+<li><p>利用反射（前提是注解的 @Retention 为 RUNTIME ）</p>
+<p>  下面是利用反射来解释注解的例子：</p>
+</li>
+</ul>
+<figure class="highlight Java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div><div class="line">72</div><div class="line">73</div><div class="line">74</div><div class="line">75</div><div class="line">76</div><div class="line">77</div><div class="line">78</div><div class="line">79</div><div class="line">80</div><div class="line">81</div><div class="line">82</div><div class="line">83</div><div class="line">84</div><div class="line">85</div><div class="line">86</div><div class="line">87</div><div class="line">88</div><div class="line">89</div><div class="line">90</div><div class="line">91</div><div class="line">92</div><div class="line">93</div><div class="line">94</div><div class="line">95</div><div class="line">96</div><div class="line">97</div><div class="line">98</div></pre></td><td class="code"><pre><div class="line">    <span class="keyword">package</span> annotation;</div><div class="line"></div><div class="line"><span class="annotation">@Model</span></div><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Student</span> </span>{</div><div class="line"><span class="keyword">true</span></div><div class="line"><span class="keyword">true</span><span class="annotation">@ValueBinding</span>(<span class="string">"Tom Hanks"</span>)</div><div class="line">truepublic String name;</div><div class="line"><span class="keyword">true</span></div><div class="line"><span class="keyword">true</span><span class="annotation">@ValueBinding</span>(<span class="string">"21"</span>)</div><div class="line">truepublic String age;</div><div class="line"><span class="keyword">true</span></div><div class="line"><span class="keyword">true</span><span class="annotation">@ValueBinding</span></div><div class="line">truepublic String gender;</div><div class="line">}</div><div class="line"></div><div class="line"><span class="keyword">package</span> annotation;</div><div class="line"></div><div class="line"><span class="keyword">import</span> java.lang.annotation.Documented;</div><div class="line"><span class="keyword">import</span> java.lang.annotation.ElementType;</div><div class="line"><span class="keyword">import</span> java.lang.annotation.Inherited;</div><div class="line"><span class="keyword">import</span> java.lang.annotation.Retention;</div><div class="line"><span class="keyword">import</span> java.lang.annotation.RetentionPolicy;</div><div class="line"><span class="keyword">import</span> java.lang.annotation.Target;</div><div class="line"></div><div class="line"><span class="annotation">@Documented</span></div><div class="line"><span class="annotation">@Retention</span>(RetentionPolicy.RUNTIME)</div><div class="line"><span class="annotation">@Target</span>(ElementType.TYPE)</div><div class="line"><span class="annotation">@Inherited</span></div><div class="line"><span class="keyword">public</span> @<span class="class"><span class="keyword">interface</span> <span class="title">Model</span> </span>{</div><div class="line">}</div><div class="line"></div><div class="line"></div><div class="line"><span class="keyword">package</span> annotation;</div><div class="line"></div><div class="line"><span class="keyword">import</span> java.lang.annotation.Documented;</div><div class="line"><span class="keyword">import</span> java.lang.annotation.ElementType;</div><div class="line"><span class="keyword">import</span> java.lang.annotation.Retention;</div><div class="line"><span class="keyword">import</span> java.lang.annotation.RetentionPolicy;</div><div class="line"><span class="keyword">import</span> java.lang.annotation.Target;</div><div class="line"></div><div class="line"><span class="annotation">@Documented</span></div><div class="line"><span class="annotation">@Retention</span>(value = RetentionPolicy.RUNTIME)</div><div class="line"><span class="annotation">@Target</span>(ElementType.FIELD)</div><div class="line"><span class="keyword">public</span> @<span class="class"><span class="keyword">interface</span> <span class="title">ValueBinding</span> </span>{</div><div class="line">truepublic String value() <span class="keyword">default</span> <span class="string">"man"</span>;</div><div class="line"></div><div class="line">}</div><div class="line"></div><div class="line"></div><div class="line"><span class="keyword">package</span> annotation;</div><div class="line"></div><div class="line"><span class="keyword">import</span> java.lang.annotation.Annotation;</div><div class="line"><span class="keyword">import</span> java.lang.reflect.Field;</div><div class="line"></div><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">AnnotationParse</span> </span>{</div><div class="line">truepublic <span class="keyword">static</span> <span class="keyword">void</span> parseModel(Class clazz) {</div><div class="line"><span class="keyword">true</span>    <span class="comment">//获取到注解</span></div><div class="line">truetrueAnnotation anno = clazz.getAnnotation(Model.class);</div><div class="line">truetrueif (anno != <span class="keyword">null</span>) {</div><div class="line">truetrue    <span class="comment">//do something</span></div><div class="line">truetruetrueSystem.out.print(<span class="string">"create table "</span>);</div><div class="line">truetruetrueSystem.out.println(clazz.getName().replace(<span class="string">"."</span>, <span class="string">"_"</span>));</div><div class="line">truetrue}</div><div class="line"><span class="keyword">true</span>}</div><div class="line"></div><div class="line">truepublic <span class="keyword">static</span> Object praseValueBinding(Class clazz)</div><div class="line">truetruetruethrows InstantiationException, IllegalAccessException {</div><div class="line">truetrueObject obj = clazz.newInstance();</div><div class="line">       <span class="comment">//获取到 field ，然后获取注解</span></div><div class="line">truetrueField[] fields = clazz.getDeclaredFields();</div><div class="line">truetruefor (Field field : fields) {</div><div class="line">truetruetrueValueBinding anno = field.getAnnotation(ValueBinding.class);</div><div class="line">truetruetrueif (anno != <span class="keyword">null</span>) {</div><div class="line">truetruetrue    <span class="comment">//得到注解的参数值</span></div><div class="line">truetruetruetrueString value = anno.value();</div><div class="line">truetruetruetruefield.set(obj, value);</div><div class="line">truetruetrue}</div><div class="line">truetrue}</div><div class="line">truetruereturn obj;</div><div class="line"><span class="keyword">true</span>}</div><div class="line">}</div><div class="line"></div><div class="line"><span class="keyword">package</span> annotation;</div><div class="line"></div><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">AnnotationTest</span> </span>{</div><div class="line">truepublic <span class="keyword">static</span> <span class="keyword">void</span> main(String[] args) {</div><div class="line">truetruetry{</div><div class="line">truetruetrueAnnotationParse.parseModel(Student.class);</div><div class="line">truetruetrueStudent stu = (Student)AnnotationParse.praseValueBinding(Student.class);</div><div class="line">truetruetrueSystem.out.println(stu.name);</div><div class="line">truetruetrueSystem.out.println(stu.age);</div><div class="line">truetruetrueSystem.out.println(stu.gender);</div><div class="line">truetrue}</div><div class="line">truetruecatch(Exception e){</div><div class="line">truetruetrueSystem.out.println(<span class="string">"Error happen"</span>);</div><div class="line">truetrue}</div><div class="line"><span class="keyword">true</span>}</div><div class="line">}</div></pre></td></tr></table></figure>
+
+
+<h3 id="总结">总结</h3>
+<p>注解的定义和使用很方便，也很简单，如何合理的设计注解成为关键性的步骤。通常需要全面考虑自己的需求，然后制定合理的注解层次。</p>
+<p>那么 Spring 里面是怎么使用注解的呢？可以参考下它的源代码和别人的文章，这里就不在赘述。也许等我学习到 Spring 的源代码的时候会去看下。</p>
+<p>注解的解释用到了反射技术，众所周知的是反射的效率不高，所以，我们应该把对注解的处理尽量放在初始化的时候进行，并且做好缓存。</p>
+<p>结束。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      
+        <a data-url="http://winminy.github.io/2014/05/Learning Java Annotation/" data-id="ruo3onhbn51hhyzf" class="article-share-link" data-share="baidu">分享到</a>
+      
+
+      
+        <a href="http://winminy.github.io/2014/05/Learning Java Annotation/#ds-thread" class="article-comment-link">Comments</a>
+      
+
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Java/">Java</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2014/05/2013-10-16-hashmap_java_implement/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          Java 中 HashMap 实现原理
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2014/05/递归的执行过程分析/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">递归扫盲贴</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+  <section id="comments">
+    <div id="ds-thread" class="ds-thread" data-thread-key="2014/05/Learning Java Annotation/" data-title="Java 自定义注解的学习笔记" data-url="http://winminy.github.io/2014/05/Learning Java Annotation/"></div>
+  </section>
+</section>
+      
+      <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">分类</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/Java/">Java</a><span class="category-list-count">4</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/algorithms/">algorithms</a><span class="category-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">标签</h3>
+    <div class="widget">
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Java/">Java</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Java-source-code/">Java_source_code</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/algorithms/">algorithms</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/design-pattern/">design_pattern</a><span class="tag-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">归档</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/05/">May 2014</a><span class="archive-list-count">5</span></li></ul>
+    </div>
+  </div>
+
+  
+</aside>
+      
+    </div>
+    <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2015 Fuwenming<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+      .
+      Theme by <a href="https://github.com/xiangming/landscape-plus" target="_blank">Landscape-plus</a>
+    </div>
+  </div>
+</footer>
+  </div>
+  <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+  <!-- totop start -->
+<div id="totop">
+<a title="返回顶部"><img src="/img/scrollup.png"/></a>
+</div>
+
+<!-- totop end -->
+
+<!-- 多说公共js代码 start -->
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"winminy"};
+  (function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] 
+     || document.getElementsByTagName('body')[0]).appendChild(ds);
+  })();
+  </script>
+<!-- 多说公共js代码 end -->
+
+
+<!-- 百度分享 start -->
+
+<div id="article-share-box" class="article-share-box">
+  <div id="bdshare" class="bdsharebuttonbox article-share-links">
+    <a class="article-share-weibo" data-cmd="tsina" title="分享到新浪微博"></a>
+    <a class="article-share-weixin" data-cmd="weixin" title="分享到微信"></a>
+    <a class="article-share-qq" data-cmd="sqq" title="分享到QQ"></a>
+    <a class="article-share-renren" data-cmd="renren" title="分享到人人网"></a>
+    <a class="article-share-more" data-cmd="more" title="更多"></a>
+  </div>
+</div>
+<script>window._bd_share_config={"common":{},"share":{"bdCustomStyle":"nocss.css"}};with(document)0[(getElementsByTagName("head")[0]||body).appendChild(createElement("script")).src="http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion="+~(-new Date()/36e5)];</script>
+
+<!-- 百度分享 end -->
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+
+
+
+
+<script src="/js/script.js" type="text/javascript"></script>
+
+
+</div>
+</body>
+</html>
