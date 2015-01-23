@@ -1,0 +1,375 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>企业级 Java 应用中事务隔离级别入门 | aBlog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="原文地址：http://java.dzone.com/articles/beginners-guide-transaction
+引言
+关系数据库的强一致性模型是基于 ACDI 这四个事务特性建立。这篇文章中，我们将会讲解使用不用级别的事务隔离背后的原因，并且介绍事物隔离级别在 各种resource local 和 JTA 事务中的配置形式。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="企业级 Java 应用中事务隔离级别入门">
+<meta property="og:url" content="http://wynn5a.github.io/2015/01/beginners-guide-transaction-isolation-levels/">
+<meta property="og:site_name" content="aBlog">
+<meta property="og:description" content="原文地址：http://java.dzone.com/articles/beginners-guide-transaction
+引言
+关系数据库的强一致性模型是基于 ACDI 这四个事务特性建立。这篇文章中，我们将会讲解使用不用级别的事务隔离背后的原因，并且介绍事物隔离级别在 各种resource local 和 JTA 事务中的配置形式。">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="企业级 Java 应用中事务隔离级别入门">
+<meta name="twitter:description" content="原文地址：http://java.dzone.com/articles/beginners-guide-transaction
+引言
+关系数据库的强一致性模型是基于 ACDI 这四个事务特性建立。这篇文章中，我们将会讲解使用不用级别的事务隔离背后的原因，并且介绍事物隔离级别在 各种resource local 和 JTA 事务中的配置形式。">
+
+  
+    <link rel="alternative" href="/atom.xml" title="aBlog" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link rel="stylesheet" href="/css/style.css" type="text/css">
+
+  <!--[if lt IE 9]><script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7/html5shiv.min.js"></script><![endif]-->
+  
+</head>
+<body>
+<div id="container">
+  <div id="wrap">
+    <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">aBlog</a>
+      </h1>
+      
+        <h2 id="subtitle-wrap">
+          <a href="/" id="subtitle">Technology changes world!</a>
+        </h2>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="http://www.baidu.com/baidu" method="get" accept-charset="utf-8" class="search-form">
+          <input type="search" name="word" maxlength="20" class="search-form-input" placeholder="Search">
+          <input type="submit" value="" class="search-form-submit">
+          <input name=tn type=hidden value="bds">
+          <input name=cl type=hidden value="3">
+          <input name=ct type=hidden value="2097152">
+          <input type="hidden" name="si" value="wynn5a.github.io">
+        </form>
+      </div>
+    </div>
+  </div>
+</header>
+    <div class="outer">
+      <section id="main"><article id="post-beginners-guide-transaction-isolation-levels" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2015/01/beginners-guide-transaction-isolation-levels/" class="article-date">
+  <time datetime="2015-01-23T14:18:47.000Z" itemprop="datePublished">2015 1月 23</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/JavaEE/">JavaEE</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      企业级 Java 应用中事务隔离级别入门
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>原文地址：<a href="http://java.dzone.com/articles/beginners-guide-transaction" target="_blank" rel="external">http://java.dzone.com/articles/beginners-guide-transaction</a></p>
+<h4 id="引言">引言</h4>
+<p>关系数据库的强一致性模型是基于 ACDI 这四个事务特性建立。<br>这篇文章中，我们将会讲解使用不用级别的事务隔离背后的原因，并且介绍事物隔离级别在 各种resource local 和 JTA 事务中的配置形式。</p>
+<a id="more"></a>
+
+<p>（译注：ACDI 是指原子性（Atomicity）、一致性（Consistency）、隔离性（Isolation）、持久性（Durability）。这篇<a href="http://my.oschina.net/huangyong/blog/160012" target="_blank" rel="external">文章</a>可以在阅读完本文之后参考阅读，也许更加容易理解。）</p>
+<h4 id="隔离性和一致性">隔离性和一致性</h4>
+<p>在关系型数据库中，原子性和持久性是比较严格的特性，隔离性和一致性则可以或多或少的进行配置，而他们之间经常存在着联系，我们有时甚至不能把他们拆分成两个事务特性。隔离级别越低，事务系统的一致性就越弱，从最弱到最强的一致性，有如下四种隔离级别：</p>
+<ul>
+<li>READ UNCOMMITTED</li>
+<li>READ COMMITTED ( 防止脏读)</li>
+<li>REPEATABLE READ (防止脏读和不可重复读)</li>
+<li>SERIALIZABLE (防止脏读、不可重复读和幻读)</li>
+</ul>
+<p>（译注：关于脏读、不可重复读和幻读这些概念，请看我从这篇<a href="http://my.oschina.net/huangyong/blog/160012" target="_blank" rel="external">文章</a>中摘抄的解释。</p>
+<blockquote>
+<p>归纳一下，以上提到了事务并发所引起的跟读取数据有关的问题，各用一句话来描述一下：</p>
+<ul>
+<li>脏读：事务 A 读取了事务 B 未提交的数据，并在这个基础上又做了其他操作。</li>
+<li>不可重复读：事务 A 读取了事务 B 已提交的更改数据。</li>
+<li>幻读：事务 A 读取了事务 B 已提交的新增数据。</li>
+</ul>
+</blockquote>
+<p>）</p>
+<p>尽管最强一致性的 <code>SERIALIZABLE</code> 隔离级别会是最安全的选择，但是大多数的数据库默认使用 <code>READ COMMITTED</code> 来代替。根据<a href="http://en.wikipedia.org/wiki/Amdahl%27s_law" target="_blank" rel="external">阿姆达尔定律</a>，为了容纳更多的并发事务，就必须要降低数据处理的串行分数。获取锁的间隔越短，数据库所能处理的请求越多。</p>
+<h4 id="隔离级别">隔离级别</h4>
+<p>像前面说的那样，应用程序级别的 <code>REPEATABLE READ</code> 搭配乐观锁机制可以很方便的防止在长会话时丢失更新。但在高并发的情况下，乐观锁可能会导致事务的高失败率，而像其他的队列机制一样悲观锁，如果有足够的获取锁的时间间隔，可能会容纳更多的事务。</p>
+<h4 id="数据库和它的隔离级别">数据库和它的隔离级别</h4>
+<p>除了使用了 <code>REPEATABLE_READ</code> 隔离级别的 MySQL 数据库，其他大多数关系型数据库系统的默认隔离级别是 <code>READ_COMMITTED</code>，当然，所有的数据库系统都允许你设置想使用的事务隔离级别。当多个应用程序共享一个数据库，而每个应用都有自己具体的事务需求的时候，对大多数的事务采用 <code>READ_COMMITTED</code> 隔离级别会是最好的选择，我们只需对特定的业务案例重新设置。这个策略被证明非常有效，它允许我们对全部 SQL 事务的一个子集指定更加严格的隔离级别。</p>
+<h4 id="数据源的隔离级别">数据源的隔离级别</h4>
+<p>JDBC 的 Connection 对象允许我们对所有发生在特定 connection 的事务设置隔离级别，而建立一个新的数据库连接是消耗资源的过程，所以，大多数的应用程序使用连接池数据源，连接池数据源也能设置如下的默认隔离级别：</p>
+<ul>
+<li>DBCP</li>
+<li>DBCP2</li>
+<li>HikariCP</li>
+<li>BoneCP</li>
+<li>Bitronix Transaction Manager</li>
+</ul>
+<p>和数据库的全局隔离级别的设置比起来，数据源级别的事务隔离配置更加方便，每个应用程序都能设置自己特定的并发控制级别。甚至我们可以定义多个预先配置好隔离级别的数据源，这样我们就能动态的选择一个数据源来动态选择指定隔离级别的 JDBC Connection。</p>
+<h4 id="Hibernate_的隔离级别">Hibernate 的隔离级别</h4>
+<p>因为 Hibernate 需要支持 <code>resource local</code> 和 <code>JTA</code> 事务，它提供了一个灵活的 Connection 获取机制。</p>
+<p>（译注：关于 resource local 和 JTA 的区别，看这个<a href="http://stackoverflow.com/questions/3217586/difference-between-a-jta-datasource-and-a-resource-local-datasource" target="_blank" rel="external">问题</a> 和这个<a href="http://stackoverflow.com/questions/1962525/persistence-unit-as-resource-local-or-jta" target="_blank" rel="external">问题</a>）</p>
+<p><code>JTA</code> 事务需要使用 <code>XAConnection</code> ，<code>XAConnection</code> 是 JTA 事务管理器提供的符合分布事务要求的 Connection。<br><code>Resource local</code> 事务可以使用 <code>reasource local</code> 数据源，在这种情况下，Hibernate 提供了多种获取 Connection 的方式：</p>
+<ul>
+<li><strong>Driver Manager Connection Provider</strong> (doesn’t pool connections and therefore it’s only meant for simple testing scenarios)</li>
+<li><strong>C3P0 Connection Provider</strong> (delegating connection acquiring calls to an internal C3P0 connection pooling DataSource)</li>
+<li><strong>DataSource Connection Provider</strong> (delegating connection acquiring calls to an external DataSource.)</li>
+</ul>
+<p>Hibernate 提供的事务隔离级别的配置叫做 <code>hibernate.connection.isolation</code>，我们来看看前面说的 connection 提供者在指定了具体的设置之后是怎么工作的。</p>
+<p>实验开始， 1. 创建 Session Factory </p>
+<figure class="highlight Java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line"><span class="annotation">@Override</span></div><div class="line"><span class="keyword">protected</span> SessionFactory <span class="title">newSessionFactory</span>() {</div><div class="line">    Properties properties = getProperties();</div><div class="line"> </div><div class="line">    <span class="keyword">return</span> <span class="keyword">new</span> Configuration()</div><div class="line">            .addProperties(properties)</div><div class="line">            .addAnnotatedClass(SecurityId.class)</div><div class="line">            .buildSessionFactory(</div><div class="line">                    <span class="keyword">new</span> StandardServiceRegistryBuilder()</div><div class="line">                            .applySettings(properties)</div><div class="line">                            .build()</div><div class="line">    );</div><div class="line">}</div></pre></td></tr></table></figure>
+
+
+
+<ol>
+<li>获取一个 session 并测试关联的 connection 的事务隔离级别 </li>
+</ol>
+<figure class="highlight Java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div></pre></td><td class="code"><pre><div class="line"><span class="annotation">@Test</span></div><div class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title">test</span>() {</div><div class="line">        Session session = <span class="keyword">null</span>;</div><div class="line">        Transaction txn = <span class="keyword">null</span>;</div><div class="line">        <span class="keyword">try</span> {</div><div class="line">            session = getSessionFactory().openSession();</div><div class="line">            txn = session.beginTransaction();</div><div class="line">            session.doWork(<span class="keyword">new</span> Work() {</div><div class="line">                <span class="annotation">@Override</span></div><div class="line">                <span class="keyword">public</span> <span class="keyword">void</span> <span class="title">execute</span>(Connection connection) <span class="keyword">throws</span> SQLException {</div><div class="line">                    LOGGER.debug(<span class="string">"Transaction isolation level is {}"</span>, Environment.isolationLevelToString(connection.getTransactionIsolation()));</div><div class="line">                }</div><div class="line">            });</div><div class="line">            txn.commit();</div><div class="line">        } <span class="keyword">catch</span> (RuntimeException e) {</div><div class="line">            <span class="keyword">if</span> ( txn != <span class="keyword">null</span> && txn.isActive() ) txn.rollback();</div><div class="line">            <span class="keyword">throw</span> e;</div><div class="line">        } <span class="keyword">finally</span> {</div><div class="line">            <span class="keyword">if</span> (session != <span class="keyword">null</span>) {</div><div class="line">                session.close();</div><div class="line">            }</div><div class="line">        }</div><div class="line">    }</div></pre></td></tr></table></figure>
+
+
+
+<p>connection provider 的配置是会造成差异的因素，下面来看具体的配置。</p>
+<h5 id="Driver_Manager_Connection_Provider">Driver Manager Connection Provider</h5>
+<p>Driver Manager Connection Provider 提供了一个对数据源驱动中 Connection provider 的简单包装，这种方式只能在测试环境中使用，因为它没有提供专业的连接池机制。</p>
+<figure class="highlight Java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line"><span class="annotation">@Override</span></div><div class="line"><span class="keyword">protected</span> Properties <span class="title">getProperties</span>() {</div><div class="line">    Properties properties = <span class="keyword">new</span> Properties();</div><div class="line">        properties.put(<span class="string">"hibernate.dialect"</span>, <span class="string">"org.hibernate.dialect.HSQLDialect"</span>);</div><div class="line">        <span class="comment">//driver settings</span></div><div class="line">        properties.put(<span class="string">"hibernate.connection.driver_class"</span>, <span class="string">"org.hsqldb.jdbcDriver"</span>);</div><div class="line">        properties.put(<span class="string">"hibernate.connection.url"</span>, <span class="string">"jdbc:hsqldb:mem:test"</span>);</div><div class="line">        properties.put(<span class="string">"hibernate.connection.username"</span>, <span class="string">"sa"</span>);</div><div class="line">        properties.put(<span class="string">"hibernate.connection.password"</span>, <span class="string">""</span>);</div><div class="line">        <span class="comment">//isolation level</span></div><div class="line">        properties.setProperty(<span class="string">"hibernate.connection.isolation"</span>, String.valueOf(Connection.TRANSACTION_SERIALIZABLE));</div><div class="line">    <span class="keyword">return</span> properties;</div><div class="line">}</div></pre></td></tr></table></figure>
+
+
+
+<p>运行之后的输出如下</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">WARN [main]: o.h.e.j.c.i.DriverManagerConnectionProviderImpl - HHH000402: Using Hibernate built-in connection pool (not for production <span class="operator"><span class="keyword">use</span>!)</span></div><div class="line">DEBUG [main]: c.v.h.m.l.t.TransactionIsolationDriverConnectionProviderTest - <span class="keyword">Transaction</span> <span class="keyword">isolation</span> <span class="keyword">level</span> <span class="keyword">is</span> <span class="keyword">SERIALIZABLE</span></div></pre></td></tr></table></figure>
+
+<p>Hibernate Session 关联的 JDBC Connection 是使用 <code>SERIALIZABLE</code> 事务隔离级别，所以 <code>hibernate.connection.isolation</code> 是可以在这个 connection provider 上生效的。</p>
+<h5 id="C3P0_Connection_Provider">C3P0 Connection Provider</h5>
+<p>Hibernate 同时也提供了内建的 C3P0 Connection provider，像上一个例子一样，我们只需要设置驱动配置，Hibernate 就会替我们实例化 C3P0 连接池。</p>
+<figure class="highlight Java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line"><span class="annotation">@Override</span></div><div class="line"><span class="keyword">protected</span> Properties <span class="title">getProperties</span>() {</div><div class="line">    Properties properties = <span class="keyword">new</span> Properties();</div><div class="line">        properties.put(<span class="string">"hibernate.dialect"</span>, <span class="string">"org.hibernate.dialect.HSQLDialect"</span>);</div><div class="line">        <span class="comment">//log settings</span></div><div class="line">        properties.put(<span class="string">"hibernate.hbm2ddl.auto"</span>, <span class="string">"update"</span>);</div><div class="line">        properties.put(<span class="string">"hibernate.show_sql"</span>, <span class="string">"true"</span>);</div><div class="line">        <span class="comment">//driver settings</span></div><div class="line">        properties.put(<span class="string">"hibernate.connection.driver_class"</span>, <span class="string">"org.hsqldb.jdbcDriver"</span>);</div><div class="line">        properties.put(<span class="string">"hibernate.connection.url"</span>, <span class="string">"jdbc:hsqldb:mem:test"</span>);</div><div class="line">        properties.put(<span class="string">"hibernate.connection.username"</span>, <span class="string">"sa"</span>);</div><div class="line">        properties.put(<span class="string">"hibernate.connection.password"</span>, <span class="string">""</span>);</div><div class="line">        <span class="comment">//c3p0 settings</span></div><div class="line">        properties.put(<span class="string">"hibernate.c3p0.min_size"</span>, <span class="number">1</span>);</div><div class="line">        properties.put(<span class="string">"hibernate.c3p0.max_size"</span>, <span class="number">5</span>);</div><div class="line">        <span class="comment">//isolation level</span></div><div class="line">        properties.setProperty(<span class="string">"hibernate.connection.isolation"</span>, String.valueOf(Connection.TRANSACTION_SERIALIZABLE));</div><div class="line">    <span class="keyword">return</span> properties;</div><div class="line">}</div></pre></td></tr></table></figure>
+
+<p>输出如下：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="tag">Dec</span> 19, 2014 11<span class="pseudo">:02</span><span class="pseudo">:56</span> <span class="tag">PM</span> <span class="tag">com</span><span class="class">.mchange</span><span class="class">.v2</span><span class="class">.log</span><span class="class">.MLog</span> &lt;<span class="tag">clinit</span>&gt;</div><div class="line"><span class="tag">INFO</span>: <span class="tag">MLog</span> <span class="tag">clients</span> <span class="tag">using</span> <span class="tag">java</span> 1<span class="class">.4</span>+ <span class="tag">standard</span> <span class="tag">logging</span><span class="class">.Dec</span> 19, 2014 11<span class="pseudo">:02</span><span class="pseudo">:56</span> <span class="tag">PM</span> <span class="tag">com</span><span class="class">.mchange</span><span class="class">.v2</span><span class="class">.c3p0</span><span class="class">.C3P0Registry</span> <span class="tag">banner</span></div><div class="line"><span class="tag">INFO</span>: <span class="tag">Initializing</span> <span class="tag">c3p0-0</span><span class="class">.9</span><span class="class">.2</span><span class="class">.1</span> <span class="attr_selector">[built 20-March-2013 10:47:27 +0000; debug? true; trace: 10]</span><span class="tag">DEBUG</span> <span class="attr_selector">[main]</span>: <span class="tag">c</span><span class="class">.v</span><span class="class">.h</span><span class="class">.m</span><span class="class">.l</span><span class="class">.t</span><span class="class">.TransactionIsolationInternalC3P0ConnectionProviderTest</span> <span class="tag">-</span> <span class="tag">Transaction</span> <span class="tag">isolation</span> <span class="tag">level</span> <span class="tag">is</span> <span class="tag">SERIALIZABLE</span></div></pre></td></tr></table></figure>
+
+<p>可见，<code>hibernate.connection.isolation</code> 是可以在内建的 C3P0 上也是生效的。</p>
+<h5 id="DataSource_Connection_Provider">DataSource Connection Provider</h5>
+<p>Hibernate 不会强迫你使用特定的 Connection provider 机制，你可以提供一个数据源，当有新的请求获取 Connection 的时候，Hibernate 就会使用它。现在我们来创建一个成熟的数据源对象，并且通过 <code>hibernate.connection.datasource</code> 的配置告诉 Hibernate。</p>
+<figure class="highlight Java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div></pre></td><td class="code"><pre><div class="line"><span class="annotation">@Override</span></div><div class="line"><span class="keyword">protected</span> Properties <span class="title">getProperties</span>() {</div><div class="line">    Properties properties = <span class="keyword">new</span> Properties();</div><div class="line">        properties.put(<span class="string">"hibernate.dialect"</span>, <span class="string">"org.hibernate.dialect.HSQLDialect"</span>);</div><div class="line">        <span class="comment">//log settings</span></div><div class="line">        properties.put(<span class="string">"hibernate.hbm2ddl.auto"</span>, <span class="string">"update"</span>);</div><div class="line">        <span class="comment">//data source settings</span></div><div class="line">        properties.put(<span class="string">"hibernate.connection.datasource"</span>, newDataSource());</div><div class="line">        <span class="comment">//isolation level</span></div><div class="line">        properties.setProperty(<span class="string">"hibernate.connection.isolation"</span>, String.valueOf(Connection.TRANSACTION_SERIALIZABLE));</div><div class="line">    <span class="keyword">return</span> properties;</div><div class="line">}</div><div class="line"> </div><div class="line"><span class="keyword">protected</span> ProxyDataSource <span class="title">newDataSource</span>() {</div><div class="line">        JDBCDataSource actualDataSource = <span class="keyword">new</span> JDBCDataSource();</div><div class="line">        actualDataSource.setUrl(<span class="string">"jdbc:hsqldb:mem:test"</span>);</div><div class="line">        actualDataSource.setUser(<span class="string">"sa"</span>);</div><div class="line">        actualDataSource.setPassword(<span class="string">""</span>);</div><div class="line">        ProxyDataSource proxyDataSource = <span class="keyword">new</span> ProxyDataSource();</div><div class="line">        proxyDataSource.setDataSource(actualDataSource);</div><div class="line">        proxyDataSource.setListener(<span class="keyword">new</span> SLF4JQueryLoggingListener());</div><div class="line">        <span class="keyword">return</span> proxyDataSource;</div><div class="line">}</div></pre></td></tr></table></figure>
+
+<p>输出如下：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="type">DEBUG</span> [main]: <span class="built_in">c</span>.v.h.m.l.t.<span class="type">TransactionIsolationExternalDataSourceConnectionProviderTest</span> - <span class="type">Transaction</span> isolation level <span class="keyword">is</span> <span class="type">READ_COMMITTED</span></div></pre></td></tr></table></figure>
+
+<p>这次的测试，<code>hibernate.connection.isolation</code> 并没有被 Hibernate 采用，它没有覆盖内置的数据源，所以这个设置也没有生效。如果你使用了外部的数据源（不如通过 JNDI），那么你需要在外部数据源上设置事务的隔离级别。我们可以通过设置外部数据源来修复这个测试用例</p>
+<figure class="highlight Java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">protected</span> ProxyDataSource <span class="title">newDataSource</span>() {</div><div class="line">    JDBCDataSource actualDataSource = <span class="keyword">new</span> JDBCDataSource();</div><div class="line">    actualDataSource.setUrl(<span class="string">"jdbc:hsqldb:mem:test"</span>);</div><div class="line">    actualDataSource.setUser(<span class="string">"sa"</span>);</div><div class="line">    actualDataSource.setPassword(<span class="string">""</span>);</div><div class="line">    Properties properties = <span class="keyword">new</span> Properties();</div><div class="line">    properties.setProperty(<span class="string">"hsqldb.tx_level"</span>, <span class="string">"SERIALIZABLE"</span>);</div><div class="line">    actualDataSource.setProperties(properties);</div><div class="line">    ProxyDataSource proxyDataSource = <span class="keyword">new</span> ProxyDataSource();</div><div class="line">    proxyDataSource.setDataSource(actualDataSource);</div><div class="line">    proxyDataSource.setListener(<span class="keyword">new</span> SLF4JQueryLoggingListener());</div><div class="line">    <span class="keyword">return</span> proxyDataSource;</div><div class="line">}</div></pre></td></tr></table></figure>
+
+<p>这次的输出如下：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="type">DEBUG</span> [main]: <span class="built_in">c</span>.v.h.m.l.t.<span class="type">TransactionIsolationExternalDataSourceExternalconfgiurationConnectionProviderTest</span> - <span class="type">Transaction</span> isolation level <span class="keyword">is</span> <span class="type">SERIALIZABLE</span></div></pre></td></tr></table></figure>
+
+<h4 id="Java_EE_的事务隔离支持">Java EE 的事务隔离支持</h4>
+<p>Hibernate 有一个内建的事务 API 抽象层，用来隔离数据访问层和事务管理结构（resource local 和 JTA），我们可以在应用中单独使用 Hibernate 的事务抽象，但更常见的做法是将这个职责委托给中间件技术（Java EE 或者 Spring）。</p>
+<h5 id="Java_Enterprise_Edition">Java Enterprise Edition</h5>
+<p>JTA（Java Transaction API specification）定义了 Java EE 兼容的应用服务器是怎么管理事务的，在应用端，我们可以使用 <code>TransactionAttribute</code> 这个注解来划分事务边界，这样我们有使用正确事务传播设置的选择，但是对事务的隔离级别却没有选择。</p>
+<p>JTA 不支持事务范畴的隔离级别，因此我们不得不使用一个有着特定事务隔离配置的 XA 数据源作为“供应商”。</p>
+<h5 id="Spring">Spring</h5>
+<p>Spring 的注解 <code>@Transactional</code>用来定义事务的边界，和 J2EE 相反的是，这个注解允许如下配置：- isolation level- exception types rollback policy- propagation- read-only- timeout就将要展示的那样，这个事务隔离级别的设置其实只会在 <code>Resource local</code> 的事务中生效，因为 JTA 不支持事务级别的隔离。Spring 提供了 <code>IsolationLevelDataSourceRouter</code> 来克服使用应用服务器的 JTA 数据源时的这个缺点。因为大多数的数据源实现都只取默认的事务隔离级别，我们可以使用多个这样的数据源，每个专门为特定的事务隔离级别的 Connection 服务。逻辑事务（如 <code>@Transactional</code>）隔离级别的设置是由<code>IsolationLevelDataSourceRouter</code> 内省得到的。因此，即使在 JTA 环境下，事务隔离路由系统也能提供一个独立的覆盖数据源默认的事务隔离级别的方案。</p>
+<h4 id="Spring_事务范畴的隔离级别">Spring 事务范畴的隔离级别</h4>
+<p>接下来测试 Spring 事务管理对 resource local 和 JTA 事务的支持。因此，先创建一个有事务的业务逻辑类：</p>
+<figure class="highlight Java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div></pre></td><td class="code"><pre><div class="line"><span class="annotation">@Service</span></div><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">StoreServiceImpl</span> <span class="keyword">implements</span> <span class="title">StoreService</span> </span>{</div><div class="line"> </div><div class="line">    <span class="keyword">protected</span> <span class="keyword">final</span> Logger LOGGER = LoggerFactory.getLogger(getClass());</div><div class="line"> </div><div class="line">    <span class="annotation">@PersistenceContext</span>(unitName = <span class="string">"persistenceUnit"</span>)</div><div class="line">    <span class="keyword">private</span> EntityManager entityManager;</div><div class="line"> </div><div class="line">    <span class="annotation">@Override</span></div><div class="line">    <span class="annotation">@Transactional</span>(isolation = Isolation.SERIALIZABLE)</div><div class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title">purchase</span>(Long productId) {        </div><div class="line">        Session session = (Session) entityManager.getDelegate();</div><div class="line">        session.doWork(<span class="keyword">new</span> Work() {</div><div class="line">            <span class="annotation">@Override</span></div><div class="line">            <span class="keyword">public</span> <span class="keyword">void</span> <span class="title">execute</span>(Connection connection) <span class="keyword">throws</span> SQLException {</div><div class="line">                LOGGER.debug(<span class="string">"Transaction isolation level is {}"</span>, Environment.isolationLevelToString(connection.getTransactionIsolation()));</div><div class="line">            }</div><div class="line">        });</div><div class="line">    }</div><div class="line">}</div></pre></td></tr></table></figure>
+
+<p>Spring 框架提供一个可以使应用的业务逻辑代码和基础的事务配置解耦的一个事务管理抽象层，Spring 事务管理只是实际中 resource local 和 JTA 事务管理器的门面。实际业务代码不变的情况下，现在从 resource local 迁移到 XA 事务只是更改配置的事，但如果没有额外的事务管理抽象层和交叉切面 AOP 的支持，这个也不可能会实现。下面测试不同的事务管理器是如何支持事务范畴的隔离级别设置的。</p>
+<h5 id="JPA_transaction_manager">JPA transaction manager</h5>
+<p>配置如下：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">&lt;bean id=<span class="string">"transactionManager"</span> class=<span class="string">"org.springframework.orm.jpa.JpaTransactionManager"</span>&gt;</div><div class="line">    &lt;property name=<span class="string">"entityManagerFactory"</span> <span class="keyword">ref</span>=<span class="string">"entityManagerFactory"</span> /&gt;</div><div class="line">&lt;/bean&gt;</div></pre></td></tr></table></figure>
+
+<p>调用我们的业务代码，会得到如下输出：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="type">DEBUG</span> [main]: <span class="built_in">c</span>.v.s.i.<span class="type">StoreServiceImpl</span> - <span class="type">Transaction</span> isolation level <span class="keyword">is</span> <span class="type">SERIALIZABLE</span></div></pre></td></tr></table></figure>
+
+<p>在这个配置下，Spring 事务管理是能够取代默认数据源的隔离级别的。</p>
+<h5 id="JTA_transaction_manager">JTA transaction manager</h5>
+<p>现在来看看当我们切换到 JTA 事务的时候会发生什么。就像我前面说的，Spring 只提供了一个逻辑上的事务管理层，这意味着我们需要自己提供一个物理的 JTA 事务管理器。以前，创建一个兼容 JTA 的事务管理器是企业应用服务器（如 Wildfly，WebLogic）的责任。现在还有种类繁多的独立 JTA 事务管理器：- Bitronix- Atomikos- RedHat Narayana我们将使用 Bitronix 来完成这部分的测试：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">&lt;bean id=<span class="string">"jtaTransactionManager"</span> factory-<span class="keyword">method</span>=<span class="string">"getTransactionManager"</span></div><div class="line">      class=<span class="string">"bitronix.tm.TransactionManagerServices"</span> depends-on=<span class="string">"btmConfig, dataSource"</span></div><div class="line">      destroy-<span class="keyword">method</span>=<span class="string">"shutdown"</span>/&gt;</div><div class="line"> </div><div class="line">&lt;bean id=<span class="string">"transactionManager"</span> class=<span class="string">"org.springframework.transaction.jta.JtaTransactionManager"</span>&gt;</div><div class="line">    &lt;property name=<span class="string">"transactionManager"</span> <span class="keyword">ref</span>=<span class="string">"jtaTransactionManager"</span>/&gt;</div><div class="line">    &lt;property name=<span class="string">"userTransaction"</span> <span class="keyword">ref</span>=<span class="string">"jtaTransactionManager"</span>/&gt;</div><div class="line">&lt;/bean&gt;</div></pre></td></tr></table></figure>
+
+<p>当我开始运行程序的时候，会得到下面这个异常：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">org.springframework.transaction.InvalidIsolationLevelException: JtaTransactionManager does <span class="operator">not</span> support custom isolation levels <span class="keyword">by</span> default - <span class="keyword">switch</span> <span class="string">'allowCustomIsolationLevels'</span> <span class="built_in">to</span> <span class="string">'true'</span></div></pre></td></tr></table></figure>
+
+<p>我们来启用客户化隔离级别并继续测试：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">&lt;bean id=<span class="string">"transactionManager"</span> class=<span class="string">"org.springframework.transaction.jta.JtaTransactionManager"</span>&gt;</div><div class="line">    &lt;property name=<span class="string">"transactionManager"</span> <span class="keyword">ref</span>=<span class="string">"jtaTransactionManager"</span>/&gt;</div><div class="line">    &lt;property name=<span class="string">"userTransaction"</span> <span class="keyword">ref</span>=<span class="string">"jtaTransactionManager"</span>/&gt;</div><div class="line">    &lt;property name=<span class="string">"allowCustomIsolationLevels"</span> value=<span class="string">"true"</span>/&gt;</div><div class="line">&lt;/bean&gt;</div></pre></td></tr></table></figure>
+
+<p>输出如下：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="type">DEBUG</span> [main]: <span class="built_in">c</span>.v.s.i.<span class="type">StoreServiceImpl</span> - <span class="type">Transaction</span> isolation level <span class="keyword">is</span> <span class="type">READ_COMMITTED</span></div></pre></td></tr></table></figure>
+
+<p>尽管经过了额外的配置，事务范畴上的隔离级别还是没有替代底层的数据源 Connection，因为这是 JTA 事务管理器默认的行为。对于 WebLogic 服务器，Spring 提供了 <code>WebLogicJtaTransactionManager</code> 来处理这个限制，我们可以看到 Spring 的源代码中有如下代码：</p>
+<figure class="highlight Java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div></pre></td><td class="code"><pre><div class="line"><span class="comment">// Specify isolation level, if any, through corresponding WebLogic transaction property.</span></div><div class="line"><span class="keyword">if</span> (<span class="keyword">this</span>.weblogicTransactionManagerAvailable) {</div><div class="line">    <span class="keyword">if</span> (definition.getIsolationLevel() != TransactionDefinition.ISOLATION_DEFAULT) {</div><div class="line">        <span class="keyword">try</span> {</div><div class="line">            Transaction tx = getTransactionManager().getTransaction();</div><div class="line">            Integer isolationLevel = definition.getIsolationLevel();</div><div class="line">            <span class="comment">/*</span></div><div class="line">            weblogic.transaction.Transaction wtx = (weblogic.transaction.Transaction) tx;</div><div class="line">            wtx.setProperty(ISOLATION_LEVEL_KEY, isolationLevel);</div><div class="line">            */</div><div class="line">            <span class="keyword">this</span>.setPropertyMethod.invoke(tx, ISOLATION_LEVEL_KEY, isolationLevel);</div><div class="line">        }</div><div class="line">        <span class="keyword">catch</span> (InvocationTargetException ex) {</div><div class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> TransactionSystemException(</div><div class="line">                    <span class="string">"WebLogic's Transaction.setProperty(String, Serializable) method failed"</span>, ex.getTargetException());</div><div class="line">        }</div><div class="line">        <span class="keyword">catch</span> (Exception ex) {</div><div class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> TransactionSystemException(</div><div class="line">                    <span class="string">"Could not invoke WebLogic's Transaction.setProperty(String, Serializable) method"</span>, ex);</div><div class="line">        }</div><div class="line">    }</div><div class="line">}</div><div class="line"><span class="keyword">else</span> {</div><div class="line">    applyIsolationLevel(txObject, definition.getIsolationLevel());</div><div class="line">}</div></pre></td></tr></table></figure>
+
+<h4 id="结论">结论</h4>
+<p>事务管理绝不是一件简单的事，尤其是当有这个多框架和抽象层，它正变得超人想象的复杂。因为数据完整对大多数的商业应用都很重要，你能做的就是掌握你当前数据层框架的技术栈。</p>
+<p>（全文完）</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      
+        <a data-url="http://wynn5a.github.io/2015/01/beginners-guide-transaction-isolation-levels/" data-id="r9ajx3i6j0hwgaj5" class="article-share-link" data-share="baidu">分享到</a>
+      
+
+      
+        <a href="http://wynn5a.github.io/2015/01/beginners-guide-transaction-isolation-levels/#ds-thread" class="article-comment-link">Comments</a>
+      
+
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/translation/">translation</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+  
+    <a href="/2014/05/创建型模式的比较和讨论/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">创建型模式总结</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+  <section id="comments">
+    <div id="ds-thread" class="ds-thread" data-thread-key="2015/01/beginners-guide-transaction-isolation-levels/" data-title="企业级 Java 应用中事务隔离级别入门" data-url="http://wynn5a.github.io/2015/01/beginners-guide-transaction-isolation-levels/"></div>
+  </section>
+</section>
+      
+      <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">分类</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/Java/">Java</a><span class="category-list-count">4</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/JavaEE/">JavaEE</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/algorithms/">algorithms</a><span class="category-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">标签</h3>
+    <div class="widget">
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Java/">Java</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Java-source-code/">Java_source_code</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/algorithms/">algorithms</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/design-pattern/">design_pattern</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/translation/">translation</a><span class="tag-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">归档</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/01/">January 2015</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/05/">May 2014</a><span class="archive-list-count">5</span></li></ul>
+    </div>
+  </div>
+
+  
+</aside>
+      
+    </div>
+    <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2015 Fuwenming<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+      .
+      Theme by <a href="https://github.com/xiangming/landscape-plus" target="_blank">Landscape-plus</a>
+    </div>
+  </div>
+</footer>
+  </div>
+  <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+  <!-- totop start -->
+<div id="totop">
+<a title="返回顶部"><img src="/img/scrollup.png"/></a>
+</div>
+
+<!-- totop end -->
+
+<!-- 多说公共js代码 start -->
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"winminy"};
+  (function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] 
+     || document.getElementsByTagName('body')[0]).appendChild(ds);
+  })();
+  </script>
+<!-- 多说公共js代码 end -->
+
+
+<!-- 百度分享 start -->
+
+<div id="article-share-box" class="article-share-box">
+  <div id="bdshare" class="bdsharebuttonbox article-share-links">
+    <a class="article-share-weibo" data-cmd="tsina" title="分享到新浪微博"></a>
+    <a class="article-share-weixin" data-cmd="weixin" title="分享到微信"></a>
+    <a class="article-share-qq" data-cmd="sqq" title="分享到QQ"></a>
+    <a class="article-share-renren" data-cmd="renren" title="分享到人人网"></a>
+    <a class="article-share-more" data-cmd="more" title="更多"></a>
+  </div>
+</div>
+<script>window._bd_share_config={"common":{},"share":{"bdCustomStyle":"nocss.css"}};with(document)0[(getElementsByTagName("head")[0]||body).appendChild(createElement("script")).src="http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion="+~(-new Date()/36e5)];</script>
+
+<!-- 百度分享 end -->
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+
+
+
+
+<script src="/js/script.js" type="text/javascript"></script>
+
+
+</div>
+</body>
+</html>
